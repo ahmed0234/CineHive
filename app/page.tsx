@@ -1,13 +1,10 @@
-import { Button } from '@/components/ui/button'
-import { ModeToggle } from '@/components/ui/Themetoggler'
+import { Navbar } from '@/components/navbar'
 
 const page = () => {
   return (
-    <div className="border borer">
-      <h1 className="text-6xl text-center font-sans text-rose-500">Main Page 12!</h1>
-      <h1 className="text-6xl text-center font-mono text-teal-500">Main Page 12!</h1>
-      <h1 className="text-6xl text-center font-bartel text-yellow-500">Main Page 12!</h1>
-      <Button>Hello World</Button>
+    <div className="flex flex-col gap-12">
+      <Navbar />
+      <h1 className="text-6xl text-center font-bartel text-yellow-500">Main Page</h1>
     </div>
   )
 }
