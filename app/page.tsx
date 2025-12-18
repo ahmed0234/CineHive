@@ -1,10 +1,21 @@
+import { MovieHeroCarousel } from '@/components/herocarousel'
 import { Navbar } from '@/components/navbar'
 
-const page = () => {
+const fetchMovies = async () => {
+  const apiKey = process.env.MOVIE_DB_API_KEY
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&language=en-US&page=1`
+  )
+  const data = await res.json()
+  return data.results
+}
+
+const page = async () => {
+  const movies = await fetchMovies()
   return (
-    <div className="flex flex-col gap-12">
+    <div className="">
       <Navbar />
-      <h1 className="text-6xl text-center font-bartel text-yellow-500">Main Page</h1>
+      <MovieHeroCarousel movies={movies} />
     </div>
   )
 }
