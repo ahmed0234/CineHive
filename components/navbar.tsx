@@ -65,7 +65,7 @@ export function Navbar() {
               <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+          <SheetContent side="right" className="w-[300px] sm:w-[400px] px-4">
             <div className="flex flex-col gap-6 pt-6">
               {/* Mobile Logo */}
               <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
@@ -74,7 +74,7 @@ export function Navbar() {
               </Link>
 
               {/* Mobile Search */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 ">
                 <span className="text-sm font-medium text-muted-foreground">Search</span>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
