@@ -108,7 +108,7 @@ export default function OpeningAnimation() {
                 className="text-white text-5xl sm:text-7xl md:text-9xl font-black italic tracking-tighter whitespace-nowrap relative"
               >
                 <motion.span
-                  animate={{ color: ['#FFFFFF', '#FFFFFF', '#facc15'] }}
+                  animate={{ color: ['#FFFFFF', '#FFFFFF', '#FF003C'] }}
                   transition={{ duration: 3, times: [0, 0.7, 1] }}
                 >
                   AHMED
@@ -140,7 +140,7 @@ export default function OpeningAnimation() {
                 initial={{ x: '-100%' }}
                 animate={{ x: '100%' }}
                 transition={{ duration: 3, ease: 'easeInOut', repeat: Infinity }}
-                className="absolute inset-0 bg-linear-to-r from-transparent via-yellow-400 to-transparent shadow-[0_0_20px_#facc15]"
+                className="absolute inset-0 bg-linear-to-r from-transparent via-red-500 to-transparent shadow-[0_0_20px_#facc15]"
               />
             </div>
           </div>
