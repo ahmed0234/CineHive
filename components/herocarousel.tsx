@@ -123,8 +123,8 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
               }}
             >
               {/* Multi-layer gradient overlays for depth and readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/40" />
+              <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/40" />
               <div className="absolute inset-0 bg-black/20" />
             </div>
           )
