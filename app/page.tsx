@@ -63,13 +63,23 @@ const horror = async () => {
 }
 
 const page = async () => {
-  const movies = await fetchMovies()
-  const upcomingMovies = await UpcomingMovies()
-  const popularMoviesData = await popularMovies()
-  const scififantasy = await scififantasies()
-  const romanceanddrama = await romanceDrama()
-  const horrorMovies = await horror()
-  const seasons = await popularSeasons()
+  const [
+    movies,
+    upcomingMovies,
+    popularMoviesData,
+    scififantasy,
+    romanceanddrama,
+    horrorMovies,
+    seasons,
+  ] = await Promise.all([
+    fetchMovies(),
+    UpcomingMovies(),
+    popularMovies(),
+    scififantasies(),
+    romanceDrama(),
+    horror(),
+    popularSeasons(),
+  ])
   return (
     <div className="">
       <Navbar />

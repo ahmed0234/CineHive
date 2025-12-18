@@ -6,6 +6,7 @@ import { Film, Menu, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { searchMovies } from '@/app/server/action'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -21,8 +22,10 @@ export function Navbar() {
       <div className="container flex h-16 items-center justify-between px-4 md:px-6  mx-auto">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <Film className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold tracking-tight">CineHive</span>
+          <Film className="h-6 w-6 text-primary text-yellow-500" />
+          <span className="text-xl font-bold tracking-tight">
+            <span className="text-yellow-500">Cine</span>Hive
+          </span>
         </Link>
 
         {/* Desktop Navigation - Center Links */}
@@ -42,12 +45,15 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <span className="text-sm font-medium text-muted-foreground">Search</span>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search movies..."
-              className="h-9 w-[200px] pl-9 lg:w-[250px]"
-            />
+            <form action={searchMovies} className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                name="movieName" // This must match formData.get("movieName")
+                type="search"
+                placeholder="Search movies..."
+                className="h-9 w-[200px] pl-9 lg:w-[250px]"
+              />
+            </form>
           </div>
         </div>
 

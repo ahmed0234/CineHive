@@ -14,7 +14,7 @@ const Footer = () => {
             <div className="flex items-center gap-2 text-yellow-500 font-bold text-2xl tracking-tighter">
               <Film className="w-8 h-8" />
               <span>
-                CINE<span className="text-white">FLOW</span>
+                Cine<span className="text-white">Hive</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed">
@@ -110,7 +110,7 @@ const Footer = () => {
             </div>
             <div className="pt-2 flex items-center gap-2 text-xs">
               <Mail className="w-4 h-4 text-yellow-500" />
-              <span>newsletter@cineflow.com</span>
+              <span>newsletter@cinehive.com</span>
             </div>
           </div>
         </div>
@@ -119,10 +119,10 @@ const Footer = () => {
 
         {/* Bottom Credits */}
         <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium">
-          <p>© {currentYear} CineFlow Inc. All rights reserved.</p>
+          <p>© {currentYear} CineHive Inc. All rights reserved.</p>
           <p className="text-zinc-500 tracking-wide uppercase">
             Website made by{' '}
-            <span className="text-yellow-500 font-bold hover:underline cursor-pointer">~ Ahmed Hassan</span>
+            <span className="text-yellow-500 font-bold hover:underline cursor-pointer text-xl">~ Ahmed Hassan</span>
           </p>
         </div>
       </div>

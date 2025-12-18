@@ -54,7 +54,7 @@ export function MovieRow({ title, movies, className }: MovieRowProps) {
   return (
     <section className={cn('relative group/section px-4', className)}>
       {/* Section Title */}
-      <h2 className="text-xl md:text-2xl font-bold mb-4 px-4 md:px-8 lg:px-12 text-foreground">
+      <h2 className="text-sm sm:text-xl md:text-2xl font-bold mb-4 px-4 md:px-8 lg:px-12 font-bartel text-yellow-400">
         {title}
       </h2>
 

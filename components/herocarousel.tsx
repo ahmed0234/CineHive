@@ -171,7 +171,7 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
 
           {/* CTA Button */}
           {currentMovie.id && (
-            <Link href={`/${currentMovie.id}`}>
+            <Link href={`/movie/${currentMovie.id}`}>
               <Button
                 size="lg"
                 className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-yellow-400/50 cursor-pointer"

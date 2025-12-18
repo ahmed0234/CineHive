@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, BBH_Sans_Bartle } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import OpeningAnimation from '@/components/OpeningAnimation'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,6 +18,12 @@ const bbhbartel = BBH_Sans_Bartle({
   variable: '--font-bbhbartet',
   subsets: ['latin'],
   weight: ['400'],
+  fallback: ['Roboto'],
+})
+
+const sdAsian = localFont({
+  src: '../public/fonts/sdasian.woff2',
+  variable: '--font-sdasian',
 })
 
 export const metadata: Metadata = {
@@ -31,10 +39,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bbhbartel.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bbhbartel.variable} ${sdAsian.className} antialiased`}
       >
+        <OpeningAnimation />
         {/* <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange> */}
-        {children}
+        <main>{children}</main>
         {/* </ThemeProvider> */}
       </body>
     </html>
