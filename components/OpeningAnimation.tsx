@@ -13,10 +13,17 @@ export default function OpeningAnimation() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Glitch keyframes for the clip-path "slicing" effect
+  // Optimized Glitch keyframes for more aggressive "slicing"
   const glitchAnimation = {
-    clipPath: ['inset(80% 0 1% 0)', 'inset(10% 0 80% 0)', 'inset(50% 0 30% 0)', 'inset(0% 0 0% 0)'],
-    x: [-2, 2, -1, 0],
+    clipPath: [
+      'inset(80% 0 1% 0)',
+      'inset(10% 0 80% 0)',
+      'inset(50% 0 30% 0)',
+      'inset(18% 0 70% 0)',
+      'inset(0% 0 0% 0)',
+    ],
+    x: [-2, 2, -1, 3, 0],
+    filter: ['hue-rotate(0deg)', 'hue-rotate(90deg)', 'hue-rotate(-90deg)', 'hue-rotate(0deg)'],
   }
 
   return (
@@ -33,9 +40,8 @@ export default function OpeningAnimation() {
           }}
           className="fixed inset-0 z-999 flex flex-col items-center justify-center bg-black overflow-hidden p-4 select-none"
         >
-          {/* 1. HIGH-END BACKGROUND LAYERS */}
+          {/* 1. BACKGROUND LAYERS */}
           <div className="absolute inset-0 z-0">
-            {/* Perspective Grid */}
             <div
               className="absolute inset-0 opacity-20"
               style={{
@@ -45,18 +51,15 @@ export default function OpeningAnimation() {
                 maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
               }}
             />
-
-            {/* Random "Digital Noise" Flickers */}
             <motion.div
-              animate={{ opacity: [0.05, 0.1, 0.05] }}
+              animate={{ opacity: [0.05, 0.15, 0.05] }}
               transition={{ repeat: Infinity, duration: 0.1 }}
-              className="absolute inset-0 bg-white/2 pointer-events-none"
+              className="absolute inset-0 bg-white/5 pointer-events-none"
             />
           </div>
 
           {/* 2. TEXT CONTENT */}
           <div className="relative z-10 flex flex-col items-center">
-            {/* "MADE BY" Label */}
             <motion.span
               initial={{ opacity: 0, letterSpacing: '0.2em' }}
               animate={{ opacity: 1, letterSpacing: '1.2em' }}
@@ -67,21 +70,21 @@ export default function OpeningAnimation() {
             </motion.span>
 
             <div className="relative group">
-              {/* RGB SPLIT / GLITCH LAYERS */}
+              {/* RGB SPLIT / GLITCH LAYERS - Delays reduced for higher frequency */}
               {[
-                { color: 'text-red-500', delay: 2, x: -4 },
-                { color: 'text-cyan-500', delay: 2.2, x: 4 },
+                { color: 'text-red-500', delay: 0.3, x: -4 },
+                { color: 'text-cyan-500', delay: 0.5, x: 4 },
               ].map((layer, i) => (
                 <motion.h1
                   key={i}
                   animate={{
                     ...glitchAnimation,
-                    opacity: [0, 0.7, 0],
+                    opacity: [0, 0.8, 0],
                   }}
                   transition={{
                     repeat: Infinity,
                     duration: 0.2,
-                    repeatDelay: layer.delay,
+                    repeatDelay: layer.delay, // Much faster repeat
                   }}
                   className={`absolute left-0 top-0 ${layer.color} text-5xl sm:text-7xl md:text-9xl font-black italic tracking-tighter mix-blend-screen whitespace-nowrap`}
                 >
@@ -89,28 +92,41 @@ export default function OpeningAnimation() {
                 </motion.h1>
               ))}
 
-              {/* MAIN TEXT WITH TARGETED COLOR CHANGE */}
+              {/* MAIN TEXT WITH FREQUENT JITTER */}
               <motion.h1
                 initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ duration: 0.8, ease: 'circOut' }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  filter: 'blur(0px)',
+                  x: [0, -1, 1, 0], // Added a small constant jitter
+                }}
+                transition={{
+                  opacity: { duration: 0.8 },
+                  x: { repeat: Infinity, duration: 0.4, repeatDelay: 1 },
+                }}
                 className="text-white text-5xl sm:text-7xl md:text-9xl font-black italic tracking-tighter whitespace-nowrap relative"
               >
-                {/* AHMED: Turns Yellow */}
                 <motion.span
                   animate={{ color: ['#FFFFFF', '#FFFFFF', '#facc15'] }}
                   transition={{ duration: 3, times: [0, 0.7, 1] }}
                 >
                   AHMED
                 </motion.span>
-
-                {/* HASSAN: Stays White */}
                 <span className="ml-4">HASSAN</span>
 
-                {/* Random Glitch Overlay for "Award-Winning" texture */}
+                {/* Frequent Overlay Glitch */}
                 <motion.span
-                  animate={{ opacity: [0, 1, 0], x: [0, 10, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.1, repeatDelay: 3 }}
+                  animate={{
+                    opacity: [0, 1, 0.5, 0],
+                    x: [0, 15, -15, 5, 0],
+                    filter: ['blur(0px)', 'blur(2px)', 'blur(0px)'],
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 0.15,
+                    repeatDelay: 0.8, // Reduced from 3s to 0.8s
+                  }}
                   className="absolute inset-0 text-white mix-blend-difference"
                 >
                   AHMED HASSAN
@@ -118,7 +134,7 @@ export default function OpeningAnimation() {
               </motion.h1>
             </div>
 
-            {/* 3. UNDERLINE/PROGRESS BAR */}
+            {/* 3. PROGRESS BAR */}
             <div className="mt-4 w-full h-[3px] bg-white/10 relative overflow-hidden">
               <motion.div
                 initial={{ x: '-100%' }}
@@ -129,11 +145,8 @@ export default function OpeningAnimation() {
             </div>
           </div>
 
-          {/* 4. POST-PROCESSING OVERLAYS */}
-          {/* Scanlines */}
+          {/* 4. OVERLAYS */}
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,118,0.06))] z-50 bg-size-[100%_4px,3px_100%]" />
-
-          {/* Vignette */}
           <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,1)]" />
         </motion.div>
       )}

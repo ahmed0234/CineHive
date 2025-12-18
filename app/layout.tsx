@@ -39,11 +39,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bbhbartel.variable} ${sdAsian.className} antialiased`}
+        className={`${sdAsian.className} ${geistSans.variable} ${geistMono.variable} ${bbhbartel.variable} ${sdAsian.className} antialiased font-sans`}
       >
         <OpeningAnimation />
         {/* <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange> */}
-        <main>{children}</main>
+        <main className="font-sans">{children}</main>
         {/* </ThemeProvider> */}
       </body>
     </html>
