@@ -4,7 +4,7 @@ import type React from 'react'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Star, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, Calendar, Play, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface Movie {
@@ -27,6 +27,20 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [playingMovieId, setPlayingMovieId] = useState<number | null>(null)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (playingMovieId) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [playingMovieId])
 
   // Navigate to next slide
   const goToNext = useCallback(() => {
@@ -46,11 +60,11 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
 
   // Autoplay functionality
   useEffect(() => {
-    if (!isHovered && movies.length > 1) {
+    if (!isHovered && !playingMovieId && movies.length > 1) {
       const interval = setInterval(goToNext, autoplayInterval)
       return () => clearInterval(interval)
     }
-  }, [isHovered, autoplayInterval, goToNext, movies.length])
+  }, [isHovered, autoplayInterval, goToNext, movies.length, playingMovieId])
 
   // Handle touch events for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -86,6 +100,8 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
   const imageUrl = currentMovie.backdrop_path
     ? `https://image.tmdb.org/t/p/original${currentMovie.backdrop_path}`
     : '/placeholder.svg?height=720&width=1280'
+
+  const playingMovie = movies.find(m => m.id === playingMovieId)
 
   return (
     <div
@@ -169,16 +185,29 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
             </p>
           )}
 
-          {/* CTA Button */}
+          {/* CTA Buttons */}
           {currentMovie.id && (
-            <Link href={`/movie/${currentMovie.id}`}>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href={`/movie/${currentMovie.id}`}>
+                <Button
+                  size="lg"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-yellow-400/50 cursor-pointer"
+                >
+                  View Details
+                </Button>
+              </Link>
               <Button
                 size="lg"
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-yellow-400/50 cursor-pointer"
+                onClick={() => {
+                  setPlayingMovieId(currentMovie.id)
+                  setIframeLoaded(false)
+                }}
+                className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 font-bold px-6 md:px-8 py-5 md:py-6 text-base md:text-lg shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-white/20 cursor-pointer group flex items-center"
               >
-                View Details
+                <Play className="w-5 h-5 mr-2 fill-current group-hover:text-yellow-400 transition-colors" />
+                Play Now
               </Button>
-            </Link>
+            </div>
           )}
         </div>
       </div>
@@ -223,6 +252,76 @@ export function MovieHeroCarousel({ movies, autoplayInterval = 2500 }: MovieHero
       <div className="hidden md:block absolute top-6 right-6 lg:top-8 lg:right-8 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
         {currentIndex + 1} / {movies.length}
       </div>
+
+      {/* Cinematic Movie Player Modal */}
+      {playingMovie && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
+          {/* Cinematic Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/95"
+            onClick={() => setPlayingMovieId(null)}
+          >
+            {/* Blurred background image of the movie */}
+            <div 
+              className="absolute inset-0 opacity-20 blur-3xl saturate-150"
+              style={{
+                backgroundImage: `url(${playingMovie.backdrop_path ? `https://image.tmdb.org/t/p/original${playingMovie.backdrop_path}` : ''})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+            {/* Gradient overlay for blending */}
+            <div className="absolute inset-0 bg-linear-to-t from-black via-black/80 to-transparent" />
+          </div>
+          
+          {/* Top Bar with Title and Close Button */}
+          <div className="absolute top-0 left-0 w-full p-6 md:p-8 flex items-start justify-between z-50">
+            <div className="animate-in slide-in-from-top-10 duration-700 delay-300 fill-mode-both max-w-3xl">
+              <h2 className="text-2xl md:text-4xl font-bold text-white drop-shadow-lg">
+                {playingMovie.title}
+              </h2>
+              {playingMovie.release_date && (
+                <p className="text-gray-400 text-sm md:text-base mt-2 font-medium">
+                  {new Date(playingMovie.release_date).getFullYear()} • Cinematic Experience
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setPlayingMovieId(null)}
+              className="p-3 bg-white/5 hover:bg-white/20 rounded-full text-white/70 hover:text-white transition-all backdrop-blur-xl border border-white/10 hover:scale-110 hover:rotate-90 duration-300 group shadow-2xl cursor-pointer"
+              aria-label="Close player"
+            >
+              <X className="w-6 h-6 md:w-8 md:h-8" />
+            </button>
+          </div>
+          
+          {/* Modal Container */}
+          <div className="relative w-[95%] max-w-7xl aspect-video mx-auto shadow-[0_0_100px_rgba(0,0,0,0.9)] rounded-2xl overflow-hidden animate-in zoom-in-95 duration-500 delay-100 fill-mode-both border border-white/10 bg-black/80 group mt-16 md:mt-8">
+            
+            {/* Ambient Lighting / Glow Effect behind iframe */}
+            <div className="absolute inset-0 bg-linear-to-tr from-yellow-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+            
+            {/* Loading State */}
+            {!iframeLoaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-40 backdrop-blur-xl transition-opacity duration-500">
+                <Loader2 className="w-12 h-12 text-yellow-400 animate-spin mb-6 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+                <p className="text-yellow-400/90 font-medium animate-pulse tracking-[0.2em] text-sm md:text-base uppercase">
+                  Loading Cinematic Experience...
+                </p>
+              </div>
+            )}
+            
+            {/* Player Iframe */}
+            <iframe
+              src={`https://vaplayer.ru/embed/movie/${playingMovie.id}`}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              onLoad={() => setIframeLoaded(true)}
+              style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.8s ease-in-out' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -42,7 +42,7 @@ export default function RootLayout({
       <body
         className={`${sdAsian.className} ${geistSans.variable} ${geistMono.variable} ${bbhbartel.variable} ${sdAsian.className} antialiased font-sans`}
       >
-        <OpeningAnimation />
+        {/* <OpeningAnimation /> */}
         {/* <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange> */}
         <main className="font-sans">{children}</main>
         {/* </ThemeProvider> */}

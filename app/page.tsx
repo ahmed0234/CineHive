@@ -101,7 +101,7 @@ const page = async () => {
         <MovieRow title="🚀 Sci-Fi & Fantasy" movies={scififantasy} />
         <MovieRow title="❤️ Romance & Drama" movies={romanceanddrama} />
         <MovieRow title="👻 Horror & Thriller" movies={horrorMovies} />
-        <MovieRow title="📺 TV Shows & Seasons" movies={seasons} />
+        <MovieRow title="📺 TV Shows & Seasons" movies={seasons} mediaType="tv" />
       </div>
       <Footer />
     </div>

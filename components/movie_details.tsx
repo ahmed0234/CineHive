@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 
 import {
   Star,
@@ -43,6 +43,8 @@ interface CrewMember {
 }
 
 interface MovieData {
+  id: number
+
   title: string
 
   tagline: string
@@ -157,6 +159,29 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
     movie?.videos?.results?.[0] // Fallback to the first video if no 'Trailer' type is found
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isPlayModalOpen, setIsPlayModalOpen] = useState(false)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsModalOpen(false)
+        setIsPlayModalOpen(false)
+      }
+    }
+
+    if (isModalOpen || isPlayModalOpen) {
+      document.body.style.overflow = 'hidden'
+      window.addEventListener('keydown', handleKeyDown)
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isModalOpen, isPlayModalOpen])
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -279,12 +304,21 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
               </div>
             </div>
 
-            <div className="pt-4 flex gap-4">
+            <div className="pt-4 flex flex-wrap gap-4">
+              <button
+                onClick={() => setIsPlayModalOpen(true)}
+                className="group relative flex items-center gap-3 bg-white text-black px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-200 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Play className="w-6 h-6 fill-current relative z-10 group-hover:animate-pulse" />
+                <span className="relative z-10 text-lg">Play Now</span>
+              </button>
+              
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 md:px-8 py-3 rounded-md font-bold transition-all transform active:scale-95"
+                className="flex items-center gap-2 bg-zinc-800/80 hover:bg-zinc-700 text-white px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 border border-zinc-700 backdrop-blur-sm"
               >
-                <Play className="w-5 h-5 fill-current" /> Watch Trailer
+                <Play className="w-5 h-5" /> Watch Trailer
               </button>
             </div>
           </div>
@@ -316,6 +350,47 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
               title="YouTube video player"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Play Now Modal */}
+      {isPlayModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-6 lg:p-10">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/95 backdrop-blur-md animate-in fade-in duration-500"
+            onClick={() => setIsPlayModalOpen(false)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative w-full h-full md:h-auto md:max-w-7xl md:aspect-video bg-zinc-950 md:rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] ring-1 ring-white/10 animate-in zoom-in-95 fade-in duration-500">
+            {/* Header/Close button */}
+            <div className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-end z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+              <button
+                onClick={() => setIsPlayModalOpen(false)}
+                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 pointer-events-auto shadow-lg"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Loading State */}
+            {!iframeLoaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-10">
+                <div className="w-16 h-16 border-4 border-zinc-800 border-t-white rounded-full animate-spin mb-4" />
+                <p className="text-zinc-400 font-medium animate-pulse">Loading cinematic experience...</p>
+              </div>
+            )}
+
+            {/* Video Player */}
+            <iframe
+              src={`https://vaplayer.ru/embed/movie/${movie.id}`}
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              onLoad={() => setIframeLoaded(true)}
+              style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.8s ease-in-out' }}
             />
           </div>
         </div>

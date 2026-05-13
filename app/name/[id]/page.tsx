@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/navbar'
 import Link from 'next/link'
+import { MovieCard } from './MovieCard'
 
 const searchMovie = async (query: string) => {
   const apikey = process.env.MOVIE_DB_API_KEY
@@ -44,38 +45,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         )}
       </div>
     </main>
-  )
-}
-
-// MovieCard now only handles the individual card UI
-function MovieCard({ movie }: { movie: any }) {
-  const posterUrl = `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-
-  return (
-    <div className="group relative overflow-hidden rounded-xl bg-slate-900 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-yellow-500/20">
-      <Link href={`/movie/${movie.id}`}>
-        <div className="aspect-2/3 w-full relative overflow-hidden">
-          <img
-            src={posterUrl}
-            alt={movie.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-          />
-
-          <div className="absolute top-2 right-2 rounded-md bg-black/70 px-2 py-1 text-xs font-bold text-yellow-500 backdrop-blur-md">
-            ★ {movie.vote_average?.toFixed(1)}
-          </div>
-        </div>
-
-        <div className="p-4">
-          <h3 className="line-clamp-1 text-lg font-semibold text-white">{movie.title}</h3>
-          <p className="text-sm text-slate-400">{movie.release_date?.split('-')[0] || 'N/A'}</p>
-
-          <p className="mt-2 line-clamp-2 text-xs text-slate-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            {movie.overview}
-          </p>
-        </div>
-      </Link>
-    </div>
   )
 }
