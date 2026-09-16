@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useRef, useState, useEffect } from 'react'
-
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import {
   Star,
   Clock,
@@ -17,82 +16,56 @@ import {
   PenTool,
   Camera,
 } from 'lucide-react'
-
 import Link from 'next/link'
-
-// --- 1. UPDATED TYPES ---
+import { MovieImage } from '@/components/movie-image'
+import { MoviePlayerModal } from '@/components/movie-player-modal'
 
 interface CastMember {
   id: number
-
   name: string
-
   character: string
-
   profile_path: string | null
 }
 
 interface CrewMember {
   id: number
-
   name: string
-
   job: string
-
   profile_path: string | null
 }
 
 interface MovieData {
   id: number
-
   title: string
-
   tagline: string
-
   overview: string
-
   backdrop_path: string
-
   poster_path: string
-
   release_date: string
-
   runtime: number
-
   vote_average: number
-
   genres: { id: number; name: string }[]
-
   budget: number
-
   revenue: number
-
   status: string
-
   production_companies: { name: string; logo_path: string | null }[]
-
-  credits: { cast: CastMember[] }
-
+  credits: { cast: CastMember[]; crew: CrewMember[] }
   videos: { results: { key: string; site: string; type: string }[] }
 }
 
 const CrewCard = ({ person }: { person: CrewMember }) => (
-  <div className="group flex-shrink-0 w-36 md:w-44 bg-zinc-900/50 rounded-xl overflow-hidden border border-zinc-800 hover:border-yellow-500/50 transition-all duration-300 snap-start">
-    <div className="h-48 overflow-hidden bg-zinc-800">
-      <img
-        src={
-          person.profile_path
-            ? `https://image.tmdb.org/t/p/w300${person.profile_path}`
-            : 'https://via.placeholder.com/300x450?text=No+Photo'
-        }
+  <div className="group shrink-0 w-36 md:w-44 bg-zinc-900/50 rounded-xl overflow-hidden border border-zinc-800 hover:border-yellow-500/50 transition-all duration-300 snap-start">
+    <div className="h-48 overflow-hidden bg-zinc-800 aspect-[3/4]">
+      <MovieImage
+        path={person.profile_path}
         alt={person.name}
-        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
+        type="profile"
+        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300 group-hover:scale-105"
       />
     </div>
 
     <div className="p-3">
       <p className="font-bold text-sm text-white truncate">{person.name}</p>
-
       <p className="text-xs text-yellow-500/80 font-medium">{person.job}</p>
     </div>
   </div>
@@ -100,14 +73,10 @@ const CrewCard = ({ person }: { person: CrewMember }) => (
 
 interface CrewSectionProps {
   title: string
-
   icon: React.ReactNode
-
   data: CrewMember[]
-
-  scrollRef: React.RefObject<HTMLDivElement>
-
-  onScroll: (ref: React.RefObject<HTMLDivElement>, dir: 'left' | 'right') => void
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  onScroll: (ref: React.RefObject<HTMLDivElement | null>, dir: 'left' | 'right') => void
 }
 
 const CrewSection = ({ title, icon, data, scrollRef, onScroll }: CrewSectionProps) => {
@@ -118,7 +87,6 @@ const CrewSection = ({ title, icon, data, scrollRef, onScroll }: CrewSectionProp
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">{icon}</div>
-
           <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
         </div>
 
@@ -126,14 +94,16 @@ const CrewSection = ({ title, icon, data, scrollRef, onScroll }: CrewSectionProp
           <div className="flex gap-2">
             <button
               onClick={() => onScroll(scrollRef, 'left')}
-              className="p-2 rounded-full border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-all"
+              className="p-2 rounded-full border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-all cursor-pointer"
+              aria-label="Scroll left"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <button
               onClick={() => onScroll(scrollRef, 'right')}
-              className="p-2 rounded-full border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-all"
+              className="p-2 rounded-full border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-all cursor-pointer"
+              aria-label="Scroll right"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -156,21 +126,20 @@ const CrewSection = ({ title, icon, data, scrollRef, onScroll }: CrewSectionProp
 const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
   const trailer =
     movie?.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube') ||
-    movie?.videos?.results?.[0] // Fallback to the first video if no 'Trailer' type is found
+    movie?.videos?.results?.[0]
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false)
   const [isPlayModalOpen, setIsPlayModalOpen] = useState(false)
-  const [iframeLoaded, setIframeLoaded] = useState(false)
 
+  // Keyboard shortcut to close trailer modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsModalOpen(false)
-        setIsPlayModalOpen(false)
+        setIsTrailerModalOpen(false)
       }
     }
 
-    if (isModalOpen || isPlayModalOpen) {
+    if (isTrailerModalOpen) {
       document.body.style.overflow = 'hidden'
       window.addEventListener('keydown', handleKeyDown)
     } else {
@@ -181,60 +150,46 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
       document.body.style.overflow = 'unset'
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isModalOpen, isPlayModalOpen])
+  }, [isTrailerModalOpen])
 
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current
-
-      const scrollTo =
-        direction === 'left' ? scrollLeft - clientWidth * 0.7 : scrollLeft + clientWidth * 0.7
-
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' })
-    }
-  }
-
-  // Filter logic
-
-  const directors = movie.credits.crew.filter(c => c.job === 'Director')
-
-  const writers = movie.credits.crew.filter(c => ['Writer', 'Screenplay', 'Author'].includes(c.job))
-
-  const producers = movie.credits.crew
-
-    .filter(c => ['Producer', 'Executive Producer'].includes(c.job))
-
-    .slice(0, 10)
-
-  // Refs for scrolling
-
   const scrollRefDirectors = useRef<HTMLDivElement>(null)
-
   const scrollRefWriters = useRef<HTMLDivElement>(null)
-
   const scrollRefProducers = useRef<HTMLDivElement>(null)
 
-  const handleScroll = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
-    if (ref.current) {
-      const { scrollLeft, clientWidth } = ref.current
-
-      const offset = direction === 'left' ? -clientWidth * 0.6 : clientWidth * 0.6
-
-      ref.current.scrollTo({ left: scrollLeft + offset, behavior: 'smooth' })
+  const scroll = useCallback((direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current
+      const scrollTo =
+        direction === 'left' ? scrollLeft - clientWidth * 0.7 : scrollLeft + clientWidth * 0.7
+      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' })
     }
-  }
+  }, [])
 
-  // Format currency
+  const handleScroll = useCallback(
+    (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
+      if (ref.current) {
+        const { scrollLeft, clientWidth } = ref.current
+        const offset = direction === 'left' ? -clientWidth * 0.6 : clientWidth * 0.6
+        ref.current.scrollTo({ left: scrollLeft + offset, behavior: 'smooth' })
+      }
+    },
+    []
+  )
+
+  const directors = movie.credits?.crew?.filter(c => c.job === 'Director') || []
+  const writers =
+    movie.credits?.crew?.filter(c => ['Writer', 'Screenplay', 'Author'].includes(c.job)) || []
+  const producers =
+    movie.credits?.crew
+      ?.filter(c => ['Producer', 'Executive Producer'].includes(c.job))
+      .slice(0, 10) || []
 
   const formatCurrency = (num: number) =>
     num > 0
       ? new Intl.NumberFormat('en-US', {
           style: 'currency',
-
           currency: 'USD',
-
           maximumFractionDigits: 0,
         }).format(num)
       : 'N/A'
@@ -242,26 +197,23 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-yellow-400 selection:text-black">
       {/* 1. HERO SECTION */}
-
       <section className="relative w-full h-[70vh] lg:h-[85vh] flex items-end overflow-hidden">
-        {/* Backdrop Image */}
-
+        {/* Responsive, high-priority Backdrop Image */}
         <div className="absolute inset-0 z-0">
-          <img
-            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+          <MovieImage
+            path={movie.backdrop_path}
             alt={movie.title}
+            type="backdrop"
+            priority={true}
             className="w-full h-full object-cover"
           />
 
           {/* Cinematic Gradients */}
-
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
-
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-transparent" />
         </div>
 
         {/* Hero Content */}
-
         <div className="container mx-auto px-6 pb-12 z-10 relative">
           <div className="max-w-4xl space-y-4">
             {movie.tagline && (
@@ -277,23 +229,25 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
             <div className="flex flex-wrap items-center gap-6 text-sm md:text-base text-zinc-300">
               <div className="flex items-center gap-1 text-yellow-400 font-bold">
                 <Star className="w-5 h-5 fill-current" />
-
                 <span>{movie.vote_average.toFixed(1)}</span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+              {movie.release_date && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(movie.release_date).getFullYear()}
+                </div>
+              )}
 
-                {new Date(movie.release_date).getFullYear()}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {movie.runtime} min
-              </div>
+              {movie.runtime > 0 && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {movie.runtime} min
+                </div>
+              )}
 
               <div className="flex gap-2">
-                {movie.genres.slice(0, 3).map(g => (
+                {movie.genres?.slice(0, 3).map(g => (
                   <span
                     key={g.id}
                     className="px-3 py-1 bg-zinc-800/80 rounded-full border border-zinc-700 text-xs"
@@ -307,39 +261,39 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
             <div className="pt-4 flex flex-wrap gap-4">
               <button
                 onClick={() => setIsPlayModalOpen(true)}
-                className="group relative flex items-center gap-3 bg-white text-black px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] overflow-hidden"
+                className="group relative flex items-center gap-3 bg-white text-black px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-200 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <Play className="w-6 h-6 fill-current relative z-10 group-hover:animate-pulse" />
                 <span className="relative z-10 text-lg">Play Now</span>
               </button>
-              
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-zinc-800/80 hover:bg-zinc-700 text-white px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 border border-zinc-700 backdrop-blur-sm"
-              >
-                <Play className="w-5 h-5" /> Watch Trailer
-              </button>
+
+              {trailer && (
+                <button
+                  onClick={() => setIsTrailerModalOpen(true)}
+                  className="flex items-center gap-2 bg-zinc-800/80 hover:bg-zinc-700 text-white px-8 py-3 md:py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 border border-zinc-700 backdrop-blur-sm cursor-pointer"
+                >
+                  <Play className="w-5 h-5" /> Watch Trailer
+                </button>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {isModalOpen && trailer && (
+      {/* YouTube Trailer Modal */}
+      {isTrailerModalOpen && trailer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10">
-          {/* Overlay */}
-
           <div
             className="absolute inset-0 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={() => setIsModalOpen(false)}
+            onClick={() => setIsTrailerModalOpen(false)}
           />
-
-          {/* Modal Content */}
 
           <div className="relative w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-zinc-800 animate-in zoom-in-95 duration-300">
             <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 z-10 p-2 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black rounded-full transition-all"
+              onClick={() => setIsTrailerModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-zinc-900/50 hover:bg-yellow-500 hover:text-black rounded-full transition-all cursor-pointer"
+              aria-label="Close trailer"
             >
               <X className="w-6 h-6" />
             </button>
@@ -355,49 +309,18 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
         </div>
       )}
 
-      {/* Play Now Modal */}
-      {isPlayModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-6 lg:p-10">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/95 backdrop-blur-md animate-in fade-in duration-500"
-            onClick={() => setIsPlayModalOpen(false)}
-          />
+      {/* Full Movie Play Modal */}
+      <MoviePlayerModal
+        isOpen={isPlayModalOpen}
+        onClose={() => setIsPlayModalOpen(false)}
+        mediaId={movie.id}
+        mediaType="movie"
+        title={movie.title}
+        releaseDate={movie.release_date}
+        backdropPath={movie.backdrop_path}
+      />
 
-          {/* Modal Container */}
-          <div className="relative w-full h-full md:h-auto md:max-w-7xl md:aspect-video bg-zinc-950 md:rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] ring-1 ring-white/10 animate-in zoom-in-95 fade-in duration-500">
-            {/* Header/Close button */}
-            <div className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-end z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-              <button
-                onClick={() => setIsPlayModalOpen(false)}
-                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 pointer-events-auto shadow-lg"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Loading State */}
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-10">
-                <div className="w-16 h-16 border-4 border-zinc-800 border-t-white rounded-full animate-spin mb-4" />
-                <p className="text-zinc-400 font-medium animate-pulse">Loading cinematic experience...</p>
-              </div>
-            )}
-
-            {/* Video Player */}
-            <iframe
-              src={`https://vaplayer.ru/embed/movie/${movie.id}`}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              onLoad={() => setIframeLoaded(true)}
-              style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.8s ease-in-out' }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 2. TRAILER SECTION */}
-
+      {/* 2. TRAILER EMBED SECTION */}
       {trailer && (
         <section className="container mx-auto px-6 py-16">
           <h2 className="text-2xl font-bold mb-8 border-l-4 border-yellow-500 pl-4">
@@ -410,75 +333,68 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
               src={`https://www.youtube.com/embed/${trailer.key}`}
               title="Movie Trailer"
               allowFullScreen
+              loading="lazy"
             />
           </div>
         </section>
       )}
 
       {/* 3. CAST SECTION */}
+      {movie.credits?.cast && movie.credits.cast.length > 0 && (
+        <section className="container mx-auto px-6 py-16">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold border-l-4 border-yellow-500 pl-4">Top Billed Cast</h2>
 
-      {/* 3. CAST SECTION */}
+            <div className="hidden md:flex gap-2">
+              <button
+                onClick={() => scroll('left')}
+                className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-colors shadow-lg cursor-pointer"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
 
-      <section className="container mx-auto px-6 py-16 ">
-        <div className="flex items-center justify-between mb-8 ">
-          <h2 className="text-2xl font-bold border-l-4 border-yellow-500 pl-4">Top Billed Cast</h2>
-
-          {/* Navigation Buttons */}
-
-          <div className="hidden md:flex gap-2">
-            <button
-              onClick={() => scroll('left')}
-              className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-colors shadow-lg group"
-              aria-label="Scroll Left"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            <button
-              onClick={() => scroll('right')}
-              className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-colors shadow-lg group"
-              aria-label="Scroll Right"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Scroll Container */}
-
-        <div
-          ref={scrollRef}
-          className="flex overflow-x-auto gap-6 pb-8 no-scrollbar scroll-smooth snap-x snap-mandatory cursor-pointer"
-        >
-          {movie.credits.cast.slice(0, 15).map(person => (
-            <div
-              key={person.id}
-              className="group shrink-0 w-40 md:w-48 bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] snap-start "
-            >
-              <Link href={`/actor/${person.id}`}>
-                <div className="h-56 overflow-hidden">
-                  <img
-                    src={
-                      person.profile_path
-                        ? `https://image.tmdb.org/t/p/w300${person.profile_path}`
-                        : 'https://via.placeholder.com/300x450?text=No+Image'
-                    }
-                    alt={person.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-
-                <div className="p-4">
-                  <p className="font-bold text-sm text-white truncate">{person.name}</p>
-
-                  <p className="text-xs text-zinc-400 truncate">{person.character}</p>
-                </div>
-              </Link>
+              <button
+                onClick={() => scroll('right')}
+                className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-yellow-500 transition-colors shadow-lg cursor-pointer"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto gap-6 pb-8 no-scrollbar scroll-smooth snap-x snap-mandatory"
+          >
+            {movie.credits.cast.slice(0, 15).map(person => (
+              <div
+                key={person.id}
+                className="group shrink-0 w-40 md:w-48 bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] snap-start"
+              >
+                <Link href={`/actor/${person.id}`}>
+                  <div className="h-56 overflow-hidden bg-zinc-800 aspect-[3/4]">
+                    <MovieImage
+                      path={person.profile_path}
+                      alt={person.name}
+                      type="profile"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+
+                  <div className="p-4">
+                    <p className="font-bold text-sm text-white truncate">{person.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">{person.character}</p>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* CREW SECTIONS */}
       <div className="container mx-auto px-6 py-12">
         <CrewSection
           title="Directors"
@@ -506,80 +422,72 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
       </div>
 
       {/* 4. DETAILS SECTION */}
-
       <section className="container mx-auto px-6 py-16 grid lg:grid-cols-3 gap-12 border-t border-zinc-900">
-        {/* Synopsis */}
-
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-3xl font-bold">Storyline</h2>
-
           <p className="text-lg text-zinc-400 leading-relaxed italic">{movie.overview}</p>
 
-          {/* 4. DETAILS SECTION - Production Companies Sub-section */}
+          {movie.production_companies && movie.production_companies.length > 0 && (
+            <div className="pt-8">
+              <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-yellow-500" />
+                Production Houses
+              </h3>
 
-          <div className="pt-8">
-            <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-yellow-500" />
-              Production Houses
-            </h3>
+              <div className="flex flex-wrap gap-4">
+                {movie.production_companies.map(company => {
+                  const hasLogo = company.logo_path !== null
 
-            <div className="flex flex-wrap gap-4">
-              {movie.production_companies.map(company => {
-                // Determine if it has a logo or needs a text badge
+                  return (
+                    <a
+                      key={company.name}
+                      href={`https://www.google.com/search?q=${encodeURIComponent(
+                        company.name + ' official website'
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative flex items-center gap-3 px-4 py-3 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-yellow-500/50 hover:bg-zinc-800 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.1)]"
+                    >
+                      {hasLogo ? (
+                        <div className="h-8 w-12 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={`https://image.tmdb.org/t/p/w200${company.logo_path}`}
+                            alt={company.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="max-h-full max-w-full object-contain brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-300"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-md bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs border border-yellow-500/20">
+                          {company.name.charAt(0)}
+                        </div>
+                      )}
 
-                const hasLogo = company.logo_path !== null
-
-                return (
-                  <a
-                    key={company.name}
-                    href={`https://www.google.com/search?q=${encodeURIComponent(
-                      company.name + ' official website'
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative flex items-center gap-3 px-4 py-3 bg-zinc-900/80 border border-zinc-800 rounded-xl hover:border-yellow-500/50 hover:bg-zinc-800 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.1)]"
-                  >
-                    {hasLogo ? (
-                      <div className="h-8 w-12 flex items-center justify-center overflow-hidden">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w200${company.logo_path}`}
-                          alt={company.name}
-                          className="max-h-full max-w-full object-contain brightness-0 invert group-hover:brightness-100 group-hover:invert-0 transition-all duration-500"
-                        />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-zinc-300 group-hover:text-yellow-500 transition-colors">
+                          {company.name}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
+                          Visit Website →
+                        </span>
                       </div>
-                    ) : (
-                      <div className="h-8 w-8 rounded-md bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs border border-yellow-500/20">
-                        {company.name.charAt(0)}
-                      </div>
-                    )}
-
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-zinc-300 group-hover:text-yellow-500 transition-colors">
-                        {company.name}
-                      </span>
-
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
-                        Visit Website →
-                      </span>
-                    </div>
-                  </a>
-                )
-              })}
+                    </a>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Sidebar Info */}
-
         <div className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800 space-y-6 h-fit">
           <div className="flex items-start gap-4">
             <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
               <Building2 className="w-5 h-5" />
             </div>
-
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-widest">Status</p>
-
               <p className="font-medium">{movie.status}</p>
             </div>
           </div>
@@ -588,10 +496,8 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
             <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
               <DollarSign className="w-5 h-5" />
             </div>
-
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-widest">Budget</p>
-
               <p className="font-medium">{formatCurrency(movie.budget)}</p>
             </div>
           </div>
@@ -600,10 +506,8 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
             <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
               <Globe className="w-5 h-5" />
             </div>
-
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-widest">Revenue</p>
-
               <p className="font-medium">{formatCurrency(movie.revenue)}</p>
             </div>
           </div>
@@ -611,19 +515,14 @@ const MovieDetailsPage = ({ movie }: { movie: MovieData }) => {
       </section>
 
       {/* Footer Branding */}
-
       <footer className="py-12 text-center text-zinc-600 text-sm">
         <p>Data provided by The Movie Database (TMDb)</p>
       </footer>
 
       {/* Custom Styles for horizontal scroll */}
-
       <style>{`
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
-
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
       `}</style>
     </div>
   )

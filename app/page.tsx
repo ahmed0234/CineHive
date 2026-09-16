@@ -3,74 +3,65 @@ import { MovieHeroCarousel } from '@/components/herocarousel';
 import { MovieRow } from '@/components/movie-row';
 import { Navbar } from '@/components/navbar';
 
+const safeFetchTMDB = async (url: string) => {
+  try {
+    const res = await fetch(url, { next: { revalidate: 12 * 60 * 60 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.results || [];
+  } catch (error) {
+    console.error(`Failed to fetch from TMDB: ${url}`, error);
+    return [];
+  }
+};
+
 const fetchMovies = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&language=en-US&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/movie/now_playing?api_key=${apiKey}&language=en-US&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const UpcomingMovies = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/upcoming?api_key=${apiKey}&language=en-US&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/movie/upcoming?api_key=${apiKey}&language=en-US&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const popularMovies = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const scififantasies = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=878,14&sort_by=popularity.desc&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=878,14&sort_by=popularity.desc&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const romanceDrama = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=10749,18&sort_by=popularity.desc&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=10749,18&sort_by=popularity.desc&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const popularSeasons = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const horror = async () => {
   const apiKey = process.env.MOVIE_DB_API_KEY;
-  const res = await fetch(
-    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=27,53&sort_by=popularity.desc&page=1`,
-    { next: { revalidate: 12 * 60 * 60 } }
+  return safeFetchTMDB(
+    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=27,53&sort_by=popularity.desc&page=1`
   );
-  const data = await res.json();
-  return data.results;
 };
 
 const page = async () => {
@@ -91,11 +82,12 @@ const page = async () => {
     horror(),
     popularSeasons(),
   ]);
+
   return (
-    <div className="">
+    <div className="min-h-screen bg-black text-white selection:bg-yellow-400 selection:text-black">
       <Navbar />
       <MovieHeroCarousel movies={movies} />
-      <div className="mt-4">
+      <div className="mt-4 space-y-4">
         <MovieRow title="🔥 Upcoming & New" movies={upcomingMovies} />
         <MovieRow title="🎭 Popular & Trending" movies={popularMoviesData} />
         <MovieRow title="🚀 Sci-Fi & Fantasy" movies={scififantasy} />

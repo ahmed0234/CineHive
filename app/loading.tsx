@@ -1,13 +1,11 @@
-'use client'
-
-import { motion } from 'framer-motion'
+import React from 'react'
 import { Film } from 'lucide-react'
 
 export default function Loading() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
       {/* Background Ambient Glow */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-900/20 blur-[120px] rounded-full" />
         <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-red-900/10 blur-[120px] rounded-full" />
       </div>
@@ -16,61 +14,50 @@ export default function Loading() {
         {/* The Cinematic Aperture */}
         <div className="relative w-24 h-24 mb-8">
           {/* Outer Rotating Ring */}
-          <motion.div
-            className="absolute inset-0 border-[2px] border-white/5 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+          <div
+            className="absolute inset-0 border-[2px] border-white/5 rounded-full animate-spin"
+            style={{ animationDuration: '8s' }}
           />
 
           {/* Animated Glow Ring */}
-          <motion.div
-            className="absolute inset-0 border-t-2 border-r-2 border-red-600 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)]"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'circInOut' }}
+          <div
+            className="absolute inset-0 border-t-2 border-r-2 border-red-600 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] animate-spin"
+            style={{ animationDuration: '1.5s' }}
           />
 
           {/* Center Icon */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <motion.div
-              animate={{
-                opacity: [0.4, 1, 0.4],
-                scale: [0.95, 1.05, 0.95],
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
+            <div className="animate-pulse">
               <Film className="w-8 h-8 text-white/90" />
-            </motion.div>
+            </div>
           </div>
         </div>
 
         {/* Cinematic Text Reveal */}
         <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-white font-light tracking-[0.4em] uppercase text-sm mb-2"
-          >
+          <h2 className="text-white font-light tracking-[0.4em] uppercase text-sm mb-2 animate-pulse">
             Studio Premiere
-          </motion.h2>
+          </h2>
 
           {/* Progress Bar Container */}
           <div className="w-48 h-[1px] bg-white/10 relative overflow-hidden">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-red-600 to-transparent"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-red-600 to-transparent animate-[shimmer_2s_infinite]"
+              style={{
+                animation: 'loading-scan 2s ease-in-out infinite',
               }}
             />
           </div>
         </div>
       </div>
 
-      {/* Film Grain Overlay Effect */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      {/* Embedded inline CSS for compositor-driven animation */}
+      <style>{`
+        @keyframes loading-scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   )
 }

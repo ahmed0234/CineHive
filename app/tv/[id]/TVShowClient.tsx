@@ -2,34 +2,43 @@
 
 import React, { useState, useEffect } from 'react'
 import { Star, Calendar, Play, X, Loader2 } from 'lucide-react'
+import { MovieImage } from '@/components/movie-image'
 
 export default function TVShowClient({ show }: { show: any }) {
-  // Try to default to Season 1, or the first available season if Season 1 doesn't exist
+  // Default to Season 1 or first available season
   const defaultSeason = show.seasons?.find((s: any) => s.season_number > 0)?.season_number || 1
   const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason)
   const [episodes, setEpisodes] = useState<any[]>([])
   const [loadingEpisodes, setLoadingEpisodes] = useState(false)
-  
+
   // Player state
   const [playingEpisode, setPlayingEpisode] = useState<any>(null)
   const [iframeLoaded, setIframeLoaded] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
     const fetchEpisodes = async () => {
       setLoadingEpisodes(true)
       try {
         const res = await fetch(`/api/tv/${show.id}/season/${selectedSeason}`)
         if (res.ok) {
           const data = await res.json()
-          setEpisodes(data.episodes || [])
+          if (isMounted) {
+            setEpisodes(data.episodes || [])
+          }
         }
       } catch (e) {
         console.error(e)
       } finally {
-        setLoadingEpisodes(false)
+        if (isMounted) {
+          setLoadingEpisodes(false)
+        }
       }
     }
     fetchEpisodes()
+    return () => {
+      isMounted = false
+    }
   }, [show.id, selectedSeason])
 
   // Scroll lock and Escape key for Modal
@@ -58,9 +67,11 @@ export default function TVShowClient({ show }: { show: any }) {
       {/* Hero Section */}
       <section className="relative w-full h-[60vh] lg:h-[70vh] flex items-end overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
-            src={`https://image.tmdb.org/t/p/original${show.backdrop_path || show.poster_path}`}
+          <MovieImage
+            path={show.backdrop_path || show.poster_path}
             alt={show.name}
+            type="backdrop"
+            priority={true}
             className="w-full h-full object-cover opacity-50"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
@@ -116,7 +127,7 @@ export default function TVShowClient({ show }: { show: any }) {
           <div className="relative">
             <select
               value={selectedSeason}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
+              onChange={e => setSelectedSeason(Number(e.target.value))}
               className="appearance-none bg-zinc-900 border border-white/10 text-white pl-6 pr-14 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 text-lg font-medium cursor-pointer shadow-xl hover:bg-zinc-800 transition-colors"
             >
               {validSeasons.map((season: any) => (
@@ -133,32 +144,30 @@ export default function TVShowClient({ show }: { show: any }) {
 
         {loadingEpisodes ? (
           <div className="flex flex-col justify-center items-center h-64 space-y-4">
-            <Loader2 className="w-12 h-12 animate-spin text-yellow-500" />
-            <p className="text-zinc-400 font-medium animate-pulse tracking-wider uppercase text-sm">Loading Episodes...</p>
+            <Loader2 className="w-10 h-10 animate-spin text-yellow-500" />
+            <p className="text-zinc-400 font-medium animate-pulse tracking-wider uppercase text-sm">
+              Loading Episodes...
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {episodes.map((episode: any) => (
-              <div 
-                key={episode.id} 
-                className="group relative bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-yellow-500/30 hover:shadow-2xl hover:shadow-yellow-500/10 transition-all duration-300 transform hover:-translate-y-1.5"
+              <div
+                key={episode.id}
+                className="group relative bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-yellow-500/30 hover:shadow-2xl hover:shadow-yellow-500/10 transition-all duration-300 transform hover:-translate-y-1"
               >
                 {/* Episode Thumbnail */}
                 <div className="relative aspect-video bg-zinc-800 overflow-hidden">
-                  <img
-                    src={
-                      episode.still_path
-                        ? `https://image.tmdb.org/t/p/w500${episode.still_path}`
-                        : `https://image.tmdb.org/t/p/w500${show.backdrop_path || show.poster_path}`
-                    }
+                  <MovieImage
+                    path={episode.still_path || show.backdrop_path || show.poster_path}
                     alt={episode.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
-                    loading="lazy"
+                    type="still"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300" />
-                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none" />
+
                   {/* Episode Number Badge */}
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-md text-sm font-bold text-white border border-white/10 shadow-lg">
+                  <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-bold text-white border border-white/10 shadow-lg pointer-events-none">
                     S{selectedSeason} E{episode.episode_number}
                   </div>
 
@@ -168,9 +177,10 @@ export default function TVShowClient({ show }: { show: any }) {
                       setPlayingEpisode(episode)
                       setIframeLoaded(false)
                     }}
-                    className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/90 text-black opacity-0 shadow-[0_0_30px_rgba(234,179,8,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-yellow-400 group-hover:opacity-100 z-10"
+                    className="absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-yellow-500/90 text-black opacity-0 shadow-[0_0_20px_rgba(234,179,8,0.5)] backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-yellow-400 group-hover:opacity-100 z-10 cursor-pointer"
+                    aria-label={`Play ${episode.name}`}
                   >
-                    <Play className="h-8 w-8 fill-current ml-1" />
+                    <Play className="h-6 w-6 fill-current ml-0.5" />
                   </button>
                 </div>
 
@@ -180,7 +190,13 @@ export default function TVShowClient({ show }: { show: any }) {
                     {episode.name}
                   </h3>
                   <div className="flex items-center text-xs text-zinc-400 mb-3 font-medium">
-                    {episode.air_date ? new Date(episode.air_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown Date'}
+                    {episode.air_date
+                      ? new Date(episode.air_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : 'Unknown Date'}
                     {episode.runtime && <span className="mx-2 text-zinc-600">•</span>}
                     {episode.runtime && <span>{episode.runtime} min</span>}
                   </div>
@@ -196,18 +212,24 @@ export default function TVShowClient({ show }: { show: any }) {
 
       {/* Cinematic Play Modal */}
       {playingEpisode && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-0 md:p-6 lg:p-10 animate-in fade-in duration-500">
-          {/* Cinematic Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-0 md:p-6 lg:p-10 animate-in fade-in duration-300"
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/95 backdrop-blur-md"
             onClick={() => setPlayingEpisode(null)}
           />
-            
+
           {/* Top Bar with Title and Close Button */}
           <div className="absolute top-0 left-0 w-full p-4 md:p-8 flex items-start justify-between z-50 pointer-events-none">
-            <div className="animate-in slide-in-from-top-10 duration-700 delay-300 max-w-3xl pointer-events-auto">
+            <div className="max-w-3xl pointer-events-auto">
               <h2 className="text-xl md:text-3xl font-bold text-white drop-shadow-2xl leading-tight">
-                <span className="text-yellow-500 mr-3 border-r border-white/20 pr-3">S{selectedSeason} E{playingEpisode.episode_number}</span>
+                <span className="text-yellow-500 mr-3 border-r border-white/20 pr-3">
+                  S{selectedSeason} E{playingEpisode.episode_number}
+                </span>
                 {playingEpisode.name}
               </h2>
               <p className="text-zinc-400 text-sm md:text-base mt-2 font-medium">
@@ -216,32 +238,32 @@ export default function TVShowClient({ show }: { show: any }) {
             </div>
             <button
               onClick={() => setPlayingEpisode(null)}
-              className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white/90 hover:text-white transition-all backdrop-blur-xl border border-white/10 hover:scale-110 duration-300 shadow-2xl pointer-events-auto"
+              className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white/90 hover:text-white transition-all backdrop-blur-md border border-white/10 hover:scale-110 duration-200 shadow-2xl pointer-events-auto cursor-pointer"
+              aria-label="Close player"
             >
               <X className="w-6 h-6 md:w-8 md:h-8" />
             </button>
           </div>
-            
+
           {/* Modal Container */}
-          <div className="relative w-full h-full md:h-auto md:max-w-7xl md:aspect-video bg-black shadow-[0_0_100px_rgba(0,0,0,0.9)] md:rounded-2xl overflow-hidden animate-in zoom-in-95 duration-500 delay-100 border border-white/10 mt-16 md:mt-0">
-              
+          <div className="relative w-full h-full md:h-auto md:max-w-7xl md:aspect-video bg-black shadow-[0_0_80px_rgba(0,0,0,0.9)] md:rounded-2xl overflow-hidden border border-white/10 mt-16 md:mt-0">
             {/* Loading State */}
             {!iframeLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-40 backdrop-blur-xl">
-                <Loader2 className="w-12 h-12 text-yellow-500 animate-spin mb-6 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-                <p className="text-yellow-500 font-medium animate-pulse tracking-[0.2em] text-sm uppercase">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-40">
+                <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-4" />
+                <p className="text-yellow-500 font-medium tracking-widest text-sm uppercase">
                   Loading Episode...
                 </p>
               </div>
             )}
-              
+
             {/* Player Iframe */}
             <iframe
               src={`https://vaplayer.ru/embed/tv/${show.id}/${selectedSeason}/${playingEpisode.episode_number}`}
               className="absolute inset-0 w-full h-full"
               allowFullScreen
               onLoad={() => setIframeLoaded(true)}
-              style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.8s ease-in-out' }}
+              style={{ opacity: iframeLoaded ? 1 : 0, transition: 'opacity 0.4s ease-in-out' }}
             />
           </div>
         </div>
